@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    image: asmit990/backend-app:latest
+    container_name: backend
+    restart: always
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/db
+    depends_on:
+      - mongo
+
+  frontend:
+    image: asmit990/angular-15-crud:latest
+    container_name: frontend
+    restart: always
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend
+
+volumes:
+  mongo_data:
