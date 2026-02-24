@@ -1,222 +1,98 @@
-Internet
-   ↓
-Nginx (Port 80)
-   ↓
-Angular Frontend (Docker Container)
-   ↓
-Node.js Backend (Docker Container)
-   ↓
-MongoDB (Docker Container)
-🛠 Technologies Used
+The traffic flows through a layered architecture to ensure security and efficient routing:
 
-Angular 15
+Internet → Nginx (Port 80) → Angular Frontend → Node.js Backend → MongoDB.
 
-Node.js + Express
+🛠 Tech Stack
+Frontend: Angular 15
 
-MongoDB
+Backend: Node.js + Express
 
-Docker
+Database: MongoDB 7
 
-Docker Compose
+Orchestration: Docker & Docker Compose
 
-Nginx
+Web Server: Nginx (Reverse Proxy)
 
-GitHub Actions
+CI/CD: GitHub Actions
 
-AWS EC2 (Ubuntu 24.04)
+Cloud: AWS EC2 (Ubuntu 24.04, ap-south-1)
 
-🐳 Dockerization
-Backend
-
+🐳 Dockerization Details
+1. Backend (backend/Dockerfile)
 Base Image: Node (Alpine)
 
-Dependencies installed using npm ci
+Optimization: Dependencies installed using npm ci
 
-MongoDB connection uses environment variable:
+Connection: Uses environment variable MONGO_URL=mongodb://mongo:27017/db
 
-MONGO_URL=mongodb://mongo:27017/db
+Internal Port: 8080
 
-Server runs on port 8080 (internally)
+2. Frontend (frontend/Dockerfile)
+Multi-stage Build:
 
-Location:
+Stage 1 (Build): Node image used for Angular production build
 
-backend/Dockerfile
-Frontend
+Stage 2 (Serve): Nginx image serves files from /usr/share/nginx/html
 
-Multi-stage Docker build:
+Exposed Port: 80
 
-Stage 1 – Build
+3. Database Setup
+Uses official mongo:7 image
 
-Node image
+Configured in docker-compose.yml
 
-Install dependencies
+Runs inside an isolated Docker network and is not publicly exposed.
 
-Angular production build
-
-Stage 2 – Serve
-
-Nginx image
-
-Copy built files to /usr/share/nginx/html
-
-Expose port 80
-
-Location:
-
-frontend/Dockerfile
-🗄 Database Setup
-
-MongoDB uses the official Docker image:
-
-mongo:7
-
-Configured in:
-
-docker-compose.yml
-
-MongoDB runs inside Docker network and is not publicly exposed.
-
-📦 Docker Compose
-
-Services:
-
-mongo
-
-backend
-
-frontend
-
-nginx
-
-To run locally:
-
-docker-compose up -d
 🌐 Nginx Reverse Proxy
+Nginx acts as the primary entry point, routing requests based on path:
 
-Configuration file:
+/ → Angular Frontend
 
-nginx/nginx.conf
+/api → Node Backend
 
-Routing rules:
-
-/ → Angular frontend
-
-/api → Node backend
-
-Application is accessible via:
-
-http://3.109.157.238
-☁️ Cloud Deployment (AWS EC2)
-Instance Details
-
-Ubuntu 24.04
-
-t2.micro
-
-Region: ap-south-1
-
-Public IP: 3.109.157.238
-
-Security Group Configuration
-
-Inbound Rules:
-
-SSH (22) → 0.0.0.0/0
-
-HTTP (80) → 0.0.0.0/0
-
-Deployment Steps on EC2
-git clone https://github.com/asmit990/dd-task.git
-cd dd-task
-docker-compose pull
-docker-compose up -d
-
-After opening port 80 in the security group, the application became publicly accessible.
+Public URL: http://3.109.157.238
 
 🔁 CI/CD Pipeline
+The workflow in .github/workflows/deploy.yml automates the deployment on every push to main:
 
-Workflow file:
+Build: Builds multi-architecture images (linux/amd64, linux/arm64)
 
-.github/workflows/deploy.yml
-Pipeline Flow (On Push to main)
+Push: Uploads images to Docker Hub (asmit990/backend-app and asmit990/angular-15-crud)
 
-Checkout repository
+Deploy: SSH into EC2, pulls latest images, and restarts containers via Docker Compose
 
-Setup Docker Buildx
+📸 Project Assets & Proof
+The following files and screenshots confirm the successful deployment and architecture:
 
-Build multi-architecture images (linux/amd64, linux/arm64)
+Repository Structure
+Plaintext
+.
+├── nginx.conf
+├── docker-compose.yml
+├── README.md
+├── appworking.png
+├── dockerhub-image.png
+├── ec2-instance.png
+├── github-actions-success.png
+└── nginx-config.png
+(As seen in project file structure)
 
-Push images to Docker Hub:
+Deployment Evidence
+github-actions-success.png: Successful CI/CD Execution
 
-asmit990/backend-app:latest
+dockerhub-image.png: Images built and pushed to Docker Hub
 
-asmit990/angular-15-crud:latest
+ec2-instance.png: AWS EC2 Instance running status
 
-SSH into EC2
+appworking.png: Application running via Public IP
 
-Pull latest images
-
-Restart containers using Docker Compose
-
-Deployment is fully automated.
-
-📦 Docker Hub Images
-
-https://hub.docker.com/r/asmit990/backend-app
-
-https://hub.docker.com/r/asmit990/angular-15-crud
-
-Images support both:
-
-amd64 (EC2)
-
-arm64 (Apple Silicon)
-
-📸 Screenshots & Proof
-1️⃣ GitHub Actions – Successful CI/CD Execution
-
-2️⃣ Docker Hub – Images Built & Pushed
-
-3️⃣ EC2 Instance Running
-
-4️⃣ Docker Containers Running on VM
-
-Command used:
-
-docker ps
-
-5️⃣ Application Running via Public IP
-
-Accessible at:
-
-http://3.109.157.238
-
-6️⃣ Nginx Reverse Proxy Configuration
+nginx-config.png: Reverse proxy routing configuration
 
 🔒 Security Considerations
+DB Isolation: MongoDB is not publicly accessible.
 
-MongoDB is not publicly exposed.
+Firewall: Only ports 22 (SSH) and 80 (HTTP) are open in Security Groups.
 
-Only required ports (22 and 80) are open.
+Secrets: SSH keys and Docker Hub credentials are stored in GitHub Secrets.
 
-Docker Hub credentials stored securely in GitHub Secrets.
-
-SSH private key stored securely in GitHub Secrets.
-
-Database connection uses environment variables.
-
-✅ Final Result
-
-The DD Task application is:
-
-Fully containerized
-
-Running on AWS EC2
-
-Served through Nginx reverse proxy
-
-Connected to MongoDB via Docker network
-
-Automatically deployed through CI/CD
-
-Publicly accessible via the EC2 public IP
+Environment Variables: Database connections use dynamic environment variables.
